@@ -5,21 +5,25 @@ import {
   View,
   Image,
   ListView,
-  Dimensions
+  Dimensions,
+  TouchableWithoutFeedback
 } from 'react-native';
 import PHOTOS from './src/data';
 import { processImages, buildRows, normalizeRows } from './src/utils';
+import PhotoViewer from './PhotoViewer';
 
 const maxWidth = Dimensions.get('window').width;
 
-const Item = ({ item }) =>
-  <Image
-    source={{ uri: item.url }}
-    style={{
-      width: item.width,
-      height: item.height
-    }}
-  />;
+const Item = ({ item, onPhotoOpen }) =>
+  <TouchableWithoutFeedback onPress={() => onPhotoOpen(item)}>
+    <Image
+      source={item.source}
+      style={{
+        width: item.width,
+        height: item.height
+      }}
+    />
+  </TouchableWithoutFeedback>;
 
 export default class App extends React.Component {
   componentWillMount() {
@@ -36,7 +40,7 @@ export default class App extends React.Component {
     };
   }
 
-  renderRow = row =>
+  renderRow = (onPhotoOpen, row) =>
     <View
       style={{
         flexDirection: 'row',
@@ -44,12 +48,20 @@ export default class App extends React.Component {
         justifyContent: 'space-between'
       }}
     >
-      {row.map(item => <Item item={item} key={item.id} />)}
+      {row.map(item =>
+        <Item item={item} key={item.id} onPhotoOpen={onPhotoOpen} />
+      )}
     </View>;
 
   render() {
     return (
-      <ListView dataSource={this.state.dataSource} renderRow={this.renderRow} />
+      <PhotoViewer
+        renderContent={({ onPhotoOpen }) =>
+          <ListView
+            dataSource={this.state.dataSource}
+            renderRow={this.renderRow.bind(this, onPhotoOpen)}
+          />}
+      />
     );
   }
 }
