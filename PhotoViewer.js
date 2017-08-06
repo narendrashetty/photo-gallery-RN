@@ -6,24 +6,67 @@ import {
   Image,
   ListView,
   Dimensions,
-  TouchableOpacity
+  TouchableOpacity,
+  Animated
 } from 'react-native';
 
 const maxWidth = Dimensions.get('window').width;
 
 class DetailView extends React.Component {
+  state = {
+    openProgress: new Animated.Value(0)
+  };
+  componentDidMount() {
+    Animated.timing(this.state.openProgress, {
+      toValue: 1,
+      duration: 300
+    }).start();
+
+    setTimeout(() => {
+      this._openingImageRef.measure(
+        (destX, destY, destWidth, destHeight, destPageX, destPageY) => {
+          console.log({
+            destX,
+            destY,
+            destWidth,
+            destHeight,
+            destPageX,
+            destPageY
+          });
+        },
+        console.error
+      );
+    });
+  }
   render() {
     const { photo, onClose } = this.props;
+    const { openProgress } = this.state;
     return (
       <View style={[StyleSheet.absoluteFill, styles.detailView]}>
         <Image
+          ref={r => (this._openingImageRef = r)}
           source={photo.source}
           style={{
             width: maxWidth,
             height: 300
           }}
         />
-        <View style={styles.body}>
+        <Animated.View
+          style={[
+            styles.body,
+            {
+              opacity: openProgress,
+              transform: [
+                {
+                  translateY: openProgress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [100, 0]
+                  })
+                }
+              ]
+            }
+          ]}
+        >
           <Text style={styles.title}>
             - {photo.postedBy}
           </Text>
@@ -38,7 +81,7 @@ class DetailView extends React.Component {
             and more recently with desktop publishing software like Aldus
             PageMaker including versions of Lorem Ipsum.
           </Text>
-        </View>
+        </Animated.View>
 
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
           <Text style={styles.closeText}>Close</Text>
@@ -54,7 +97,6 @@ export default class PhotoViewer extends React.Component {
   };
 
   open = photo => {
-    console.log(photo);
     this.setState({ photo });
   };
 
@@ -97,7 +139,7 @@ const styles = StyleSheet.create({
     left: 20,
     borderWidth: 1,
     borderColor: 'white',
-    padding: 20,
+    padding: 10,
     paddingTop: 10,
     paddingBottom: 10,
     borderWidth: StyleSheet.hairlineWidth,
