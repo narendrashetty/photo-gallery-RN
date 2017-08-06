@@ -1,8 +1,7 @@
-export const TARGET_HEIGHT = 100;
-export const BORDER_OFFSET = 5;
-export const MAX_WIDTH = 1000;
+const TARGET_HEIGHT = 200;
+const BORDER_OFFSET = 5;
 
-export function makeSmaller(image, amount) {
+function makeSmaller(image, amount) {
   amount = amount || 1;
   const newHeight = image.height - amount;
   image.width = image.width * (newHeight / image.height);
@@ -11,7 +10,7 @@ export function makeSmaller(image, amount) {
   return image;
 }
 
-export function getCumulativeWidth(images) {
+function getCumulativeWidth(images) {
   let width = 0;
 
   for (let i = 0; i < images.length; i++) {
@@ -23,8 +22,8 @@ export function getCumulativeWidth(images) {
   return width;
 }
 
-export function fitImagesInRow(images) {
-  while (getCumulativeWidth(images) > MAX_WIDTH) {
+function fitImagesInRow(images, maxWidth) {
+  while (getCumulativeWidth(images) > maxWidth) {
     for (var i = 0; i < images.length; i++) {
       images[i] = makeSmaller(images[i]);
     }
@@ -34,35 +33,20 @@ export function fitImagesInRow(images) {
 }
 
 export function processImages(photos) {
-  const processedImages = [];
-  for (let i = 0; i < photos.size; i++) {
-    let width = parseInt(photos.getIn([i, 'width']), 10);
-    const height = parseInt(photos.getIn([i, 'height']), 10);
-    const ratio = width / height;
-    width = TARGET_HEIGHT * ratio;
-
-    var image = {
-      id: photos.getIn([i, 'id']),
-      height: TARGET_HEIGHT,
-      url: photos.getIn([i, 'url']),
-      postedBy: photos.getIn([i, 'postedBy']),
-      title: photos.getIn([i, 'title']),
-      width
-    };
-    processedImages.push(image);
-  }
-
-  return processedImages;
+  return photos.map(photo => {
+    const aspectRatio = photo.width / photo.height;
+    photo.width = TARGET_HEIGHT * aspectRatio;
+    photo.height = TARGET_HEIGHT;
+    return photo;
+  });
 }
 
-export function buildRows(
-  processedImages,
-  currentRow = 0,
-  currentWidth = 0,
-  rows = []
-) {
+export function buildRows(processedImages, maxWidth) {
+  let currentRow = 0;
+  let currentWidth = 0;
+  let rows = [];
   processedImages.forEach(image => {
-    if (currentWidth >= MAX_WIDTH) {
+    if (currentWidth >= maxWidth) {
       currentRow++;
       currentWidth = 0;
     }
@@ -74,5 +58,24 @@ export function buildRows(
     rows[currentRow].push(image);
     currentWidth += image.width;
   });
+  return rows;
+}
+
+export function normalizeRows(rows, maxWidth) {
+  for (let i = 0; i < rows.length; i++) {
+    rows[i] = fitImagesInRow(rows[i], maxWidth);
+
+    const difference = maxWidth - getCumulativeWidth(rows[i]);
+    const amountOfImages = rows[i].length;
+
+    if (amountOfImages > 1 && difference < 10) {
+      const addToEach = difference / amountOfImages;
+      for (let n = 0; n < rows[i].length; n++) {
+        rows[i][n].width += addToEach;
+      }
+      rows[i][rows[i].length - 1].width +=
+        maxWidth - getCumulativeWidth(rows[i]);
+    }
+  }
   return rows;
 }

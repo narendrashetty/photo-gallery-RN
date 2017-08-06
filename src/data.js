@@ -50,14 +50,6 @@ export default [
     title: 'Bountiful Glory'
   },
   {
-    id: '36247840671',
-    url: 'https://farm5.staticflickr.com/4364/36247840671_37b95fd234_z.jpg',
-    postedBy: 'Rohan Reilly',
-    width: 640,
-    height: 640,
-    title: 'Timbre'
-  },
-  {
     id: '36385293895',
     url: 'https://farm5.staticflickr.com/4354/36385293895_5c64635c7e_z.jpg',
     postedBy: 'Manfred Hartmann',
@@ -72,14 +64,6 @@ export default [
     width: 640,
     height: 426,
     title: 'Eastern Ringtail'
-  },
-  {
-    id: '35546006354',
-    url: 'https://farm5.staticflickr.com/4383/35546006354_160bdd306f_z.jpg',
-    postedBy: 'Dermot Russell',
-    width: 640,
-    height: 639,
-    title: 'The Stages of Self'
   },
   {
     id: '36215026892',
