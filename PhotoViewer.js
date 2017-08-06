@@ -16,7 +16,8 @@ const maxWidth = Dimensions.get('window').width;
 
 class DetailView extends React.Component {
   state = {
-    openProgress: new Animated.Value(0)
+    openProgress: new Animated.Value(0),
+    openingMeasurements: null
   };
   componentDidMount() {
     Animated.timing(this.state.openProgress, {
@@ -25,50 +26,58 @@ class DetailView extends React.Component {
     }).start();
 
     setTimeout(() => {
-      this._openingImageRef.measure(
-        (destX, destY, destWidth, destHeight, destPageX, destPageY) => {
-          this.props.sourceImageRef.measure(
-            (
-              soruceX,
-              soruceY,
-              sourceWidth,
-              sourceHeight,
-              sourcePageX,
-              sourcePageY
-            ) => {
-              console.log({
+      this._openingImageRef
+        .getNode()
+        .measure(
+          (destX, destY, destWidth, destHeight, destPageX, destPageY) => {
+            this.props.sourceImageRef.measure(
+              (
                 soruceX,
                 soruceY,
                 sourceWidth,
                 sourceHeight,
                 sourcePageX,
-                sourcePageY,
-                destX,
-                destY,
-                destWidth,
-                destHeight,
-                destPageX,
-                destPageY
-              });
-            },
-            console.error
-          );
-        },
-        console.error
-      );
+                sourcePageY
+              ) => {
+                this.setState({
+                  openingMeasurements: {
+                    soruceX,
+                    soruceY,
+                    sourceWidth,
+                    sourceHeight,
+                    sourcePageX,
+                    sourcePageY,
+                    destX,
+                    destY,
+                    destWidth,
+                    destHeight,
+                    destPageX,
+                    destPageY
+                  }
+                });
+              },
+              console.error
+            );
+          },
+          console.error
+        );
     });
   }
   render() {
     const { photo, onClose } = this.props;
-    const { openProgress } = this.state;
+    const { openProgress, openingMeasurements } = this.state;
     return (
       <View style={[StyleSheet.absoluteFill, styles.detailView]}>
-        <Image
+        <Animated.Image
           ref={r => (this._openingImageRef = r)}
           source={photo.source}
           style={{
             width: maxWidth,
-            height: 300
+            height: 300,
+            opacity: openProgress.interpolate({
+              inputRange: [0.8, 1],
+              outputRange: [0, 1]
+            })
           }}
         />
         <Animated.View
@@ -102,6 +111,42 @@ class DetailView extends React.Component {
             PageMaker including versions of Lorem Ipsum.
           </Text>
         </Animated.View>
+
+        {openingMeasurements &&
+          <Animated.Image
+            source={photo.source}
+            style={{
+              position: 'absolute',
+              width: openProgress.interpolate({
+                inputRange: [0, 1],
+                outputRange: [
+                  openingMeasurements.sourceWidth,
+                  openingMeasurements.destWidth
+                ]
+              }),
+              height: openProgress.interpolate({
+                inputRange: [0, 1],
+                outputRange: [
+                  openingMeasurements.sourceHeight,
+                  openingMeasurements.destHeight
+                ]
+              }),
+              left: openProgress.interpolate({
+                inputRange: [0, 1],
+                outputRange: [
+                  openingMeasurements.sourcePageX,
+                  openingMeasurements.destPageX
+                ]
+              }),
+              top: openProgress.interpolate({
+                inputRange: [0, 1],
+                outputRange: [
+                  openingMeasurements.sourcePageY,
+                  openingMeasurements.destPageY
+                ]
+              })
+            }}
+          />}
 
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
           <Text style={styles.closeText}>Close</Text>
