@@ -10,6 +10,8 @@ import {
   Animated
 } from 'react-native';
 
+import PropTypes from 'prop-types';
+
 const maxWidth = Dimensions.get('window').width;
 
 class DetailView extends React.Component {
@@ -25,14 +27,32 @@ class DetailView extends React.Component {
     setTimeout(() => {
       this._openingImageRef.measure(
         (destX, destY, destWidth, destHeight, destPageX, destPageY) => {
-          console.log({
-            destX,
-            destY,
-            destWidth,
-            destHeight,
-            destPageX,
-            destPageY
-          });
+          this.props.sourceImageRef.measure(
+            (
+              soruceX,
+              soruceY,
+              sourceWidth,
+              sourceHeight,
+              sourcePageX,
+              sourcePageY
+            ) => {
+              console.log({
+                soruceX,
+                soruceY,
+                sourceWidth,
+                sourceHeight,
+                sourcePageX,
+                sourcePageY,
+                destX,
+                destY,
+                destWidth,
+                destHeight,
+                destPageX,
+                destPageY
+              });
+            },
+            console.error
+          );
         },
         console.error
       );
@@ -91,9 +111,44 @@ class DetailView extends React.Component {
   }
 }
 
+class PhotoViewerPhoto extends React.Component {
+  static contextTypes = {
+    onImageRef: PropTypes.func
+  };
+
+  render() {
+    const { style, photo } = this.props;
+    return (
+      <Image
+        ref={i => {
+          this.context.onImageRef(photo, i);
+        }}
+        style={style}
+        source={photo.source}
+      />
+    );
+  }
+}
+
 export default class PhotoViewer extends React.Component {
+  static Photo = PhotoViewerPhoto;
+
   state = {
     photo: null
+  };
+
+  _images = {};
+
+  static childContextTypes = {
+    onImageRef: PropTypes.func
+  };
+
+  getChildContext() {
+    return { onImageRef: this._onImageRef };
+  }
+
+  _onImageRef = (photo, imageRef) => {
+    this._images[photo.id] = imageRef;
   };
 
   open = photo => {
@@ -111,7 +166,12 @@ export default class PhotoViewer extends React.Component {
     return (
       <View style={{ flex: 1 }}>
         {this.props.renderContent({ onPhotoOpen: this.open })}
-        {photo && <DetailView photo={photo} onClose={this.close} />}
+        {photo &&
+          <DetailView
+            sourceImageRef={this._images[photo.id]}
+            photo={photo}
+            onClose={this.close}
+          />}
       </View>
     );
   }

@@ -16,13 +16,15 @@ const maxWidth = Dimensions.get('window').width;
 
 const Item = ({ item, onPhotoOpen }) =>
   <TouchableWithoutFeedback onPress={() => onPhotoOpen(item)}>
-    <Image
-      source={item.source}
-      style={{
-        width: item.width,
-        height: item.height
-      }}
-    />
+    <View>
+      <PhotoViewer.Photo
+        photo={item}
+        style={{
+          width: item.width,
+          height: item.height
+        }}
+      />
+    </View>
   </TouchableWithoutFeedback>;
 
 export default class App extends React.Component {
