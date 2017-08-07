@@ -67,7 +67,7 @@ class DetailView extends React.Component {
     const { photo, onClose } = this.props;
     const { openProgress, openingMeasurements } = this.state;
     return (
-      <View style={[StyleSheet.absoluteFill, styles.detailView]}>
+      <Animated.View style={[StyleSheet.absoluteFill, {}]}>
         <Animated.Image
           ref={r => (this._openingImageRef = r)}
           source={photo.source}
@@ -85,6 +85,7 @@ class DetailView extends React.Component {
             styles.body,
             {
               opacity: openProgress,
+              backgroundColor: '#fff',
               transform: [
                 {
                   translateY: openProgress.interpolate({
@@ -116,6 +117,7 @@ class DetailView extends React.Component {
           <Animated.Image
             source={photo.source}
             style={{
+              backgroundColor: 'green',
               position: 'absolute',
               width: openProgress.interpolate({
                 inputRange: [0, 1],
@@ -151,7 +153,7 @@ class DetailView extends React.Component {
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
           <Text style={styles.closeText}>Close</Text>
         </TouchableOpacity>
-      </View>
+      </Animated.View>
     );
   }
 }
@@ -227,13 +229,13 @@ const styles = StyleSheet.create({
     color: '#000',
     fontSize: 22,
     fontWeight: '600',
-    fontFamily: 'Avenir Next',
+    // fontFamily: 'Avenir Next',
     lineHeight: 50
   },
   description: {
     color: '#333',
-    fontSize: 14,
-    fontFamily: 'Avenir Next'
+    fontSize: 14
+    // fontFamily: 'Avenir Next'
   },
   body: { flex: 1, padding: 15 },
   closeText: { color: 'white', backgroundColor: 'transparent' },
@@ -250,8 +252,5 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'white',
     borderRadius: 5
-  },
-  detailView: {
-    backgroundColor: '#fff'
   }
 });
