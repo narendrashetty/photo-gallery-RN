@@ -13,17 +13,22 @@ import {
 import PropTypes from 'prop-types';
 
 const maxWidth = Dimensions.get('window').width;
+const maxHeight = Dimensions.get('window').height;
 
 class DetailView extends React.Component {
   state = {
     openProgress: new Animated.Value(0),
-    openingMeasurements: null
+    openMeasurements: null
   };
+  animationComplete = false;
   componentDidMount() {
     Animated.timing(this.state.openProgress, {
       toValue: 1,
-      duration: 300
-    }).start();
+      duration: 300,
+      useNativeDriver: true
+    }).start(() => {
+      this.animationComplete = true;
+    });
 
     setTimeout(() => {
       this._openingImageRef
@@ -40,7 +45,7 @@ class DetailView extends React.Component {
                 sourcePageY
               ) => {
                 this.setState({
-                  openingMeasurements: {
+                  openMeasurements: {
                     soruceX,
                     soruceY,
                     sourceWidth,
@@ -65,7 +70,38 @@ class DetailView extends React.Component {
   }
   render() {
     const { photo, onClose } = this.props;
-    const { openProgress, openingMeasurements } = this.state;
+    const { openProgress, openMeasurements } = this.state;
+
+    let openingEndScale = 0;
+
+    if (openMeasurements) {
+      const aspectRatio = photo.width / photo.height;
+      const screenAspectRatio = maxWidth / 300;
+
+      if (aspectRatio - screenAspectRatio > 0) {
+        const maxDim = openMeasurements.destWidth;
+        const srcShortDim = openMeasurements.sourceHeight;
+        const srcMaxDim = srcShortDim * aspectRatio;
+        openingInitScale = srcMaxDim / maxDim;
+      } else {
+        const maxDim = openMeasurements.destHeight;
+        const srcShortDim = openMeasurements.sourceWidth;
+        const srcMaxDim = srcShortDim / aspectRatio;
+        openingInitScale = srcMaxDim / maxDim;
+      }
+
+      const translateInitY =
+        openMeasurements.sourcePageY + openMeasurements.sourceHeight / 2;
+      const translateDestY =
+        openMeasurements.destPageY + openMeasurements.destHeight / 2;
+      openingInitTranslateY = translateInitY - translateDestY;
+      const translateInitX =
+        openMeasurements.sourcePageX + openMeasurements.sourceWidth / 2;
+      const translateDestX =
+        openMeasurements.destPageX + openMeasurements.destWidth / 2;
+      openingInitTranslateX = translateInitX - translateDestX;
+    }
+
     return (
       <Animated.View style={[StyleSheet.absoluteFill, {}]}>
         <Animated.Image
@@ -75,8 +111,8 @@ class DetailView extends React.Component {
             width: maxWidth,
             height: 300,
             opacity: openProgress.interpolate({
-              inputRange: [0.8, 1],
-              outputRange: [0, 1]
+              inputRange: [0, 0.99, 0.995],
+              outputRange: [0, 0, 1]
             })
           }}
         />
@@ -113,40 +149,41 @@ class DetailView extends React.Component {
           </Text>
         </Animated.View>
 
-        {openingMeasurements &&
+        {openMeasurements &&
+          !this.animationComplete &&
           <Animated.Image
             source={photo.source}
             style={{
               backgroundColor: 'green',
               position: 'absolute',
-              width: openProgress.interpolate({
-                inputRange: [0, 1],
-                outputRange: [
-                  openingMeasurements.sourceWidth,
-                  openingMeasurements.destWidth
-                ]
+              width: openMeasurements.destWidth,
+              height: openMeasurements.destHeight,
+              left: openMeasurements.destPageX,
+              top: openMeasurements.destPageY,
+              opacity: openProgress.interpolate({
+                inputRange: [0, 0.005, 0.995, 1],
+                outputRange: [0, 1, 1, 0]
               }),
-              height: openProgress.interpolate({
-                inputRange: [0, 1],
-                outputRange: [
-                  openingMeasurements.sourceHeight,
-                  openingMeasurements.destHeight
-                ]
-              }),
-              left: openProgress.interpolate({
-                inputRange: [0, 1],
-                outputRange: [
-                  openingMeasurements.sourcePageX,
-                  openingMeasurements.destPageX
-                ]
-              }),
-              top: openProgress.interpolate({
-                inputRange: [0, 1],
-                outputRange: [
-                  openingMeasurements.sourcePageY,
-                  openingMeasurements.destPageY
-                ]
-              })
+              transform: [
+                {
+                  translateX: openProgress.interpolate({
+                    inputRange: [0.01, 0.99],
+                    outputRange: [openingInitTranslateX, 0]
+                  })
+                },
+                {
+                  translateY: openProgress.interpolate({
+                    inputRange: [0.01, 0.99],
+                    outputRange: [openingInitTranslateY, 0]
+                  })
+                },
+                {
+                  scale: openProgress.interpolate({
+                    inputRange: [0.01, 0.99],
+                    outputRange: [openingInitScale, 1]
+                  })
+                }
+              ]
             }}
           />}
 
