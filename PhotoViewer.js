@@ -21,48 +21,61 @@ class DetailView extends React.Component {
     openMeasurements: null
   };
   animationComplete = false;
-  componentDidMount() {
-    Animated.timing(this.state.openProgress, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true
-    }).start(() => {
-      this.animationComplete = true;
-    });
 
+  componentDidUpdate(lastProps, lastState) {
+    if (!lastState.openMeasurements && this.state.openMeasurements) {
+      Animated.timing(this.state.openProgress, {
+        toValue: 1,
+        duration: 3000,
+        useNativeDriver: true
+      }).start(() => {
+        this.animationComplete = true;
+      });
+    }
+  }
+
+  componentDidMount() {
+    this.props.sourceImageOpacity(
+      this.state.openProgress.interpolate({
+        inputRange: [0.005, 0.01, 0.99, 1],
+        outputRange: [1, 0, 0, 1]
+      })
+    );
     setTimeout(() => {
       this._openingImageRef
         .getNode()
         .measure(
           (destX, destY, destWidth, destHeight, destPageX, destPageY) => {
-            this.props.sourceImageRef.measure(
-              (
-                soruceX,
-                soruceY,
-                sourceWidth,
-                sourceHeight,
-                sourcePageX,
-                sourcePageY
-              ) => {
-                this.setState({
-                  openMeasurements: {
-                    soruceX,
-                    soruceY,
-                    sourceWidth,
-                    sourceHeight,
-                    sourcePageX,
-                    sourcePageY,
-                    destX,
-                    destY,
-                    destWidth,
-                    destHeight,
-                    destPageX,
-                    destPageY
-                  }
-                });
-              },
-              console.error
-            );
+            this.props.sourceImageRef
+              .getNode()
+              .measure(
+                (
+                  soruceX,
+                  soruceY,
+                  sourceWidth,
+                  sourceHeight,
+                  sourcePageX,
+                  sourcePageY
+                ) => {
+                  this.setState({
+                    openMeasurements: {
+                      soruceX,
+                      soruceY,
+                      sourceWidth,
+                      sourceHeight,
+                      sourcePageX,
+                      sourcePageY,
+                      destX,
+                      destY,
+                      destWidth,
+                      destHeight,
+                      destPageX,
+                      destPageY
+                    }
+                  });
+                },
+                console.error
+              );
           },
           console.error
         );
@@ -73,33 +86,49 @@ class DetailView extends React.Component {
     const { openProgress, openMeasurements } = this.state;
 
     let openingEndScale = 0;
+    let maxDim = 0;
+
+    const aspectRatio = photo.width / photo.height;
+    const screenAspectRatio = maxWidth / 300;
 
     if (openMeasurements) {
-      const aspectRatio = photo.width / photo.height;
-      const screenAspectRatio = maxWidth / 300;
+      let translateInitY =
+        openMeasurements.sourcePageY + openMeasurements.sourceHeight / 2;
+      let translateDestY =
+        openMeasurements.destPageY + openMeasurements.destHeight / 2;
+      let translateInitX =
+        openMeasurements.sourcePageX + openMeasurements.sourceWidth / 2;
+      let translateDestX =
+        openMeasurements.destPageX + openMeasurements.destWidth / 2;
 
       if (aspectRatio - screenAspectRatio > 0) {
-        const maxDim = openMeasurements.destWidth;
-        const srcShortDim = openMeasurements.sourceHeight;
-        const srcMaxDim = srcShortDim * aspectRatio;
-        openingInitScale = srcMaxDim / maxDim;
-      } else {
-        const maxDim = openMeasurements.destHeight;
-        const srcShortDim = openMeasurements.sourceWidth;
-        const srcMaxDim = srcShortDim / aspectRatio;
-        openingInitScale = srcMaxDim / maxDim;
-      }
+        console.log('hello');
+        dh = openMeasurements.destHeight;
+        dw = aspectRatio * dh;
+        openingInitScale = openMeasurements.sourceWidth / dw;
 
-      const translateInitY =
-        openMeasurements.sourcePageY + openMeasurements.sourceHeight / 2;
-      const translateDestY =
-        openMeasurements.destPageY + openMeasurements.destHeight / 2;
-      openingInitTranslateY = translateInitY - translateDestY;
-      const translateInitX =
-        openMeasurements.sourcePageX + openMeasurements.sourceWidth / 2;
-      const translateDestX =
-        openMeasurements.destPageX + openMeasurements.destWidth / 2;
+        maxW = (dw - openMeasurements.destWidth) / 2;
+
+        translateDestX = openMeasurements.destPageX + dw / 2;
+
+        endX =
+          openMeasurements.destPageX - (dw - openMeasurements.destWidth) / 2;
+        endY = openMeasurements.destPageY;
+        translateDestX = endX + dw / 2;
+      } else {
+        dw = openMeasurements.destWidth;
+        dh = dw / aspectRatio;
+        openingInitScale = openMeasurements.sourceWidth / dw;
+
+        translateDestY = openMeasurements.destPageY + dh / 2;
+
+        endX = openMeasurements.destPageX;
+        endY =
+          openMeasurements.destPageY - (dh - openMeasurements.destHeight) / 2;
+        translateDestY = endY + dh / 2;
+      }
       openingInitTranslateX = translateInitX - translateDestX;
+      openingInitTranslateY = translateInitY - translateDestY;
     }
 
     return (
@@ -120,6 +149,7 @@ class DetailView extends React.Component {
           style={[
             styles.body,
             {
+              zIndex: 10,
               opacity: openProgress,
               backgroundColor: '#fff',
               transform: [
@@ -150,16 +180,15 @@ class DetailView extends React.Component {
         </Animated.View>
 
         {openMeasurements &&
-          !this.animationComplete &&
           <Animated.Image
             source={photo.source}
             style={{
               backgroundColor: 'green',
               position: 'absolute',
-              width: openMeasurements.destWidth,
-              height: openMeasurements.destHeight,
-              left: openMeasurements.destPageX,
-              top: openMeasurements.destPageY,
+              width: dw,
+              height: dh,
+              left: endX,
+              top: endY,
               opacity: openProgress.interpolate({
                 inputRange: [0, 0.005, 0.995, 1],
                 outputRange: [0, 1, 1, 0]
@@ -196,18 +225,32 @@ class DetailView extends React.Component {
 }
 
 class PhotoViewerPhoto extends React.Component {
+  state = {
+    opacity: 1
+  };
+
   static contextTypes = {
     onImageRef: PropTypes.func
   };
 
+  setOpacity = opacity => {
+    this.setState({ opacity });
+  };
+
   render() {
     const { style, photo } = this.props;
+    const { opacity } = this.state;
     return (
-      <Image
+      <Animated.Image
         ref={i => {
-          this.context.onImageRef(photo, i);
+          this.context.onImageRef(photo, i, this.setOpacity);
         }}
-        style={style}
+        style={[
+          style,
+          {
+            opacity
+          }
+        ]}
         source={photo.source}
       />
     );
@@ -223,6 +266,8 @@ export default class PhotoViewer extends React.Component {
 
   _images = {};
 
+  _imageOpacitySetters = {};
+
   static childContextTypes = {
     onImageRef: PropTypes.func
   };
@@ -231,8 +276,9 @@ export default class PhotoViewer extends React.Component {
     return { onImageRef: this._onImageRef };
   }
 
-  _onImageRef = (photo, imageRef) => {
+  _onImageRef = (photo, imageRef, setOpacity) => {
     this._images[photo.id] = imageRef;
+    this._imageOpacitySetters[photo.id] = setOpacity;
   };
 
   open = photo => {
@@ -253,6 +299,7 @@ export default class PhotoViewer extends React.Component {
         {photo &&
           <DetailView
             sourceImageRef={this._images[photo.id]}
+            sourceImageOpacity={this._imageOpacitySetters[photo.id]}
             photo={photo}
             onClose={this.close}
           />}
