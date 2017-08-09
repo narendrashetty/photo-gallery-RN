@@ -84,51 +84,49 @@ class DetailView extends React.Component {
   render() {
     const { photo, onClose } = this.props;
     const { openProgress, openMeasurements } = this.state;
-
-    let openingEndScale = 0;
-    let maxDim = 0;
-
-    const aspectRatio = photo.width / photo.height;
-    const screenAspectRatio = maxWidth / 300;
+    let destRightDimension = {
+      width: 0,
+      height: 0,
+      pageX: 0,
+      pageY: 0
+    };
+    let openingInitScale = 1;
 
     if (openMeasurements) {
-      let translateInitY =
-        openMeasurements.sourcePageY + openMeasurements.sourceHeight / 2;
-      let translateDestY =
-        openMeasurements.destPageY + openMeasurements.destHeight / 2;
-      let translateInitX =
-        openMeasurements.sourcePageX + openMeasurements.sourceWidth / 2;
-      let translateDestX =
-        openMeasurements.destPageX + openMeasurements.destWidth / 2;
+      const aspectRatio = photo.width / photo.height;
+      const screenAspectRatio = maxWidth / 300;
+
+      destRightDimension = {
+        width: openMeasurements.destWidth,
+        height: openMeasurements.destHeight,
+        pageX: openMeasurements.destPageX,
+        pageY: openMeasurements.destPageY
+      };
 
       if (aspectRatio - screenAspectRatio > 0) {
-        console.log('hello');
-        dh = openMeasurements.destHeight;
-        dw = aspectRatio * dh;
-        openingInitScale = openMeasurements.sourceWidth / dw;
-
-        maxW = (dw - openMeasurements.destWidth) / 2;
-
-        translateDestX = openMeasurements.destPageX + dw / 2;
-
-        endX =
-          openMeasurements.destPageX - (dw - openMeasurements.destWidth) / 2;
-        endY = openMeasurements.destPageY;
-        translateDestX = endX + dw / 2;
+        destRightDimension.width = aspectRatio * destRightDimension.height;
+        destRightDimension.pageX -=
+          (destRightDimension.width - openMeasurements.destWidth) / 2;
       } else {
-        dw = openMeasurements.destWidth;
-        dh = dw / aspectRatio;
-        openingInitScale = openMeasurements.sourceWidth / dw;
-
-        translateDestY = openMeasurements.destPageY + dh / 2;
-
-        endX = openMeasurements.destPageX;
-        endY =
-          openMeasurements.destPageY - (dh - openMeasurements.destHeight) / 2;
-        translateDestY = endY + dh / 2;
+        destRightDimension.height = destRightDimension.width / aspectRatio;
+        destRightDimension.pageY -=
+          (destRightDimension.height - openMeasurements.destHeight) / 2;
       }
+
+      const translateInitX =
+        openMeasurements.sourcePageX + openMeasurements.sourceWidth / 2;
+      const translateInitY =
+        openMeasurements.sourcePageY + openMeasurements.sourceHeight / 2;
+      const translateDestX =
+        destRightDimension.pageX + destRightDimension.width / 2;
+      const translateDestY =
+        destRightDimension.pageY + destRightDimension.height / 2;
+
       openingInitTranslateX = translateInitX - translateDestX;
       openingInitTranslateY = translateInitY - translateDestY;
+
+      openingInitScale =
+        openMeasurements.sourceWidth / destRightDimension.width;
     }
 
     return (
@@ -185,10 +183,10 @@ class DetailView extends React.Component {
             style={{
               backgroundColor: 'green',
               position: 'absolute',
-              width: dw,
-              height: dh,
-              left: endX,
-              top: endY,
+              width: destRightDimension.width,
+              height: destRightDimension.height,
+              left: destRightDimension.pageX,
+              top: destRightDimension.pageY,
               opacity: openProgress.interpolate({
                 inputRange: [0, 0.005, 0.995, 1],
                 outputRange: [0, 1, 1, 0]
