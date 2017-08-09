@@ -16,118 +16,8 @@ const maxWidth = Dimensions.get('window').width;
 const maxHeight = Dimensions.get('window').height;
 
 class DetailView extends React.Component {
-  state = {
-    openProgress: new Animated.Value(0),
-    openMeasurements: null
-  };
-  animationComplete = false;
-
-  componentDidUpdate(lastProps, lastState) {
-    if (!lastState.openMeasurements && this.state.openMeasurements) {
-      Animated.timing(this.state.openProgress, {
-        toValue: 1,
-        duration: 3000,
-        useNativeDriver: true
-      }).start(() => {
-        this.animationComplete = true;
-      });
-    }
-  }
-
-  componentDidMount() {
-    this.props.sourceImageOpacity(
-      this.state.openProgress.interpolate({
-        inputRange: [0.005, 0.01, 0.99, 1],
-        outputRange: [1, 0, 0, 1]
-      })
-    );
-    setTimeout(() => {
-      this._openingImageRef
-        .getNode()
-        .measure(
-          (destX, destY, destWidth, destHeight, destPageX, destPageY) => {
-            this.props.sourceImageRef
-              .getNode()
-              .measure(
-                (
-                  soruceX,
-                  soruceY,
-                  sourceWidth,
-                  sourceHeight,
-                  sourcePageX,
-                  sourcePageY
-                ) => {
-                  this.setState({
-                    openMeasurements: {
-                      soruceX,
-                      soruceY,
-                      sourceWidth,
-                      sourceHeight,
-                      sourcePageX,
-                      sourcePageY,
-                      destX,
-                      destY,
-                      destWidth,
-                      destHeight,
-                      destPageX,
-                      destPageY
-                    }
-                  });
-                },
-                console.error
-              );
-          },
-          console.error
-        );
-    });
-  }
   render() {
-    const { photo, onClose } = this.props;
-    const { openProgress, openMeasurements } = this.state;
-    let destRightDimension = {
-      width: 0,
-      height: 0,
-      pageX: 0,
-      pageY: 0
-    };
-    let openingInitScale = 1;
-
-    if (openMeasurements) {
-      const aspectRatio = photo.width / photo.height;
-      const screenAspectRatio = maxWidth / 300;
-
-      destRightDimension = {
-        width: openMeasurements.destWidth,
-        height: openMeasurements.destHeight,
-        pageX: openMeasurements.destPageX,
-        pageY: openMeasurements.destPageY
-      };
-
-      if (aspectRatio - screenAspectRatio > 0) {
-        destRightDimension.width = aspectRatio * destRightDimension.height;
-        destRightDimension.pageX -=
-          (destRightDimension.width - openMeasurements.destWidth) / 2;
-      } else {
-        destRightDimension.height = destRightDimension.width / aspectRatio;
-        destRightDimension.pageY -=
-          (destRightDimension.height - openMeasurements.destHeight) / 2;
-      }
-
-      const translateInitX =
-        openMeasurements.sourcePageX + openMeasurements.sourceWidth / 2;
-      const translateInitY =
-        openMeasurements.sourcePageY + openMeasurements.sourceHeight / 2;
-      const translateDestX =
-        destRightDimension.pageX + destRightDimension.width / 2;
-      const translateDestY =
-        destRightDimension.pageY + destRightDimension.height / 2;
-
-      openingInitTranslateX = translateInitX - translateDestX;
-      openingInitTranslateY = translateInitY - translateDestY;
-
-      openingInitScale =
-        openMeasurements.sourceWidth / destRightDimension.width;
-    }
+    const { photo, onClose, openProgress } = this.props;
 
     return (
       <Animated.View style={[StyleSheet.absoluteFill, {}]}>
@@ -147,7 +37,6 @@ class DetailView extends React.Component {
           style={[
             styles.body,
             {
-              zIndex: 10,
               opacity: openProgress,
               backgroundColor: '#fff',
               transform: [
@@ -176,49 +65,135 @@ class DetailView extends React.Component {
             PageMaker including versions of Lorem Ipsum.
           </Text>
         </Animated.View>
-
-        {openMeasurements &&
-          <Animated.Image
-            source={photo.source}
-            style={{
-              backgroundColor: 'green',
-              position: 'absolute',
-              width: destRightDimension.width,
-              height: destRightDimension.height,
-              left: destRightDimension.pageX,
-              top: destRightDimension.pageY,
-              opacity: openProgress.interpolate({
-                inputRange: [0, 0.005, 0.995, 1],
-                outputRange: [0, 1, 1, 0]
-              }),
-              transform: [
-                {
-                  translateX: openProgress.interpolate({
-                    inputRange: [0.01, 0.99],
-                    outputRange: [openingInitTranslateX, 0]
-                  })
-                },
-                {
-                  translateY: openProgress.interpolate({
-                    inputRange: [0.01, 0.99],
-                    outputRange: [openingInitTranslateY, 0]
-                  })
-                },
-                {
-                  scale: openProgress.interpolate({
-                    inputRange: [0.01, 0.99],
-                    outputRange: [openingInitScale, 1]
-                  })
-                }
-              ]
-            }}
-          />}
-
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
           <Text style={styles.closeText}>Close</Text>
         </TouchableOpacity>
       </Animated.View>
     );
+  }
+}
+
+class Transition extends React.Component {
+  state = {
+    destinationDimension: {
+      width: maxWidth,
+      height: 300,
+      pageX: 0,
+      pageY: 0
+    },
+    sourceDimension: {
+      width: 0,
+      height: 0,
+      pageX: 0,
+      pageY: 0
+    }
+  };
+
+  componentWillReceiveProps(nextProps) {
+    const { photo, sourceImageRefs } = nextProps;
+
+    if (photo) {
+      const sourceImageRef = sourceImageRefs[photo.id];
+      sourceImageRef
+        .getNode()
+        .measure((soruceX, soruceY, width, height, pageX, pageY) => {
+          this.setState({
+            sourceDimension: {
+              width,
+              height,
+              pageX,
+              pageY
+            }
+          });
+        });
+    }
+  }
+
+  render() {
+    const { photo, openProgress } = this.props;
+    const { destinationDimension, sourceDimension } = this.state;
+
+    if (photo) {
+      let destRightDimension = {
+        width: 0,
+        height: 0,
+        pageX: 0,
+        pageY: 0
+      };
+      let openingInitScale = 1;
+
+      const aspectRatio = photo.width / photo.height;
+      const screenAspectRatio =
+        destinationDimension.width / destinationDimension.height;
+
+      destRightDimension = {
+        width: destinationDimension.width,
+        height: destinationDimension.height,
+        pageX: destinationDimension.pageX,
+        pageY: destinationDimension.pageY
+      };
+
+      if (aspectRatio - screenAspectRatio > 0) {
+        destRightDimension.width = aspectRatio * destRightDimension.height;
+        destRightDimension.pageX -=
+          (destRightDimension.width - destinationDimension.width) / 2;
+      } else {
+        destRightDimension.height = destRightDimension.width / aspectRatio;
+        destRightDimension.pageY -=
+          (destRightDimension.height - destinationDimension.height) / 2;
+      }
+
+      const translateInitX = sourceDimension.pageX + sourceDimension.width / 2;
+      const translateInitY = sourceDimension.pageY + sourceDimension.height / 2;
+      const translateDestX =
+        destRightDimension.pageX + destRightDimension.width / 2;
+      const translateDestY =
+        destRightDimension.pageY + destRightDimension.height / 2;
+
+      openingInitTranslateX = translateInitX - translateDestX;
+      openingInitTranslateY = translateInitY - translateDestY;
+
+      openingInitScale = sourceDimension.width / destRightDimension.width;
+
+      return (
+        <Animated.Image
+          source={photo.source}
+          style={{
+            backgroundColor: 'green',
+            position: 'absolute',
+            width: destRightDimension.width,
+            height: destRightDimension.height,
+            left: destRightDimension.pageX,
+            top: destRightDimension.pageY,
+            opacity: openProgress.interpolate({
+              inputRange: [0, 0.005, 0.995, 1],
+              outputRange: [0, 1, 1, 0]
+            }),
+            transform: [
+              {
+                translateX: openProgress.interpolate({
+                  inputRange: [0.01, 0.99],
+                  outputRange: [openingInitTranslateX, 0]
+                })
+              },
+              {
+                translateY: openProgress.interpolate({
+                  inputRange: [0.01, 0.99],
+                  outputRange: [openingInitTranslateY, 0]
+                })
+              },
+              {
+                scale: openProgress.interpolate({
+                  inputRange: [0.01, 0.99],
+                  outputRange: [openingInitScale, 1]
+                })
+              }
+            ]
+          }}
+        />
+      );
+    }
+    return <View />;
   }
 }
 
@@ -259,7 +234,8 @@ export default class PhotoViewer extends React.Component {
   static Photo = PhotoViewerPhoto;
 
   state = {
-    photo: null
+    photo: null,
+    openProgress: new Animated.Value(0)
   };
 
   _images = {};
@@ -280,26 +256,42 @@ export default class PhotoViewer extends React.Component {
   };
 
   open = photo => {
-    this.setState({ photo });
-  };
-
-  close = () => {
-    this.setState({
-      photo: null
+    this._imageOpacitySetters[photo.id](
+      this.state.openProgress.interpolate({
+        inputRange: [0.005, 0.01, 0.99, 1],
+        outputRange: [1, 0, 0, 1]
+      })
+    );
+    this.setState({ photo }, () => {
+      Animated.timing(this.state.openProgress, {
+        toValue: 1,
+        duration: 3000,
+        useNativeDriver: true
+      }).start(() => {
+        this.setState({ openProgress: new Animated.Value(0) });
+      });
     });
   };
 
+  close = () => {
+    this.setState({ photo: null }, () => {});
+  };
+
   render() {
-    const { photo } = this.state;
+    const { photo, openProgress } = this.state;
     return (
       <View style={{ flex: 1 }}>
         {this.props.renderContent({ onPhotoOpen: this.open })}
+        <Transition
+          openProgress={openProgress}
+          photo={photo}
+          sourceImageRefs={this._images}
+        />
         {photo &&
           <DetailView
-            sourceImageRef={this._images[photo.id]}
-            sourceImageOpacity={this._imageOpacitySetters[photo.id]}
             photo={photo}
             onClose={this.close}
+            openProgress={openProgress}
           />}
       </View>
     );
