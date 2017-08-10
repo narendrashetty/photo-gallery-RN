@@ -28,11 +28,14 @@ class DetailView extends React.Component {
   }
 
   render() {
-    const { onClose, openProgress } = this.props;
+    const { onClose, openProgress, isAnimating } = this.props;
     const { localPhoto } = this.state;
     if (localPhoto) {
       return (
-        <Animated.View style={[StyleSheet.absoluteFill, {}]}>
+        <Animated.View
+          style={[StyleSheet.absoluteFill]}
+          pointerEvents={isAnimating || this.props.photo ? 'auto' : 'none'}
+        >
           <Animated.Image
             ref={r => (this._openingImageRef = r)}
             source={localPhoto.source}
@@ -78,9 +81,22 @@ class DetailView extends React.Component {
               Lorem Ipsum.
             </Text>
           </Animated.View>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Text style={styles.closeText}>Close</Text>
-          </TouchableOpacity>
+          <Animated.View
+            style={{
+              position: 'absolute',
+              top: 20,
+              left: 20,
+              opacity: openProgress
+            }}
+            pointerEvents={isAnimating ? 'none' : 'auto'}
+          >
+            <TouchableOpacity
+              onPress={() => onClose(localPhoto.id)}
+              style={styles.closeButton}
+            >
+              <Text style={styles.closeText}>Close</Text>
+            </TouchableOpacity>
+          </Animated.View>
         </Animated.View>
       );
     }
@@ -128,7 +144,6 @@ class Transition extends React.Component {
   render() {
     const { openProgress } = this.props;
     const { destinationDimension, sourceDimension, photo } = this.state;
-
     if (photo) {
       let destRightDimension = {
         width: 0,
@@ -251,7 +266,8 @@ export default class PhotoViewer extends React.Component {
 
   state = {
     photo: null,
-    openProgress: new Animated.Value(0)
+    openProgress: new Animated.Value(0),
+    isAnimating: false
   };
 
   _images = {};
@@ -274,44 +290,50 @@ export default class PhotoViewer extends React.Component {
   open = photo => {
     this._imageOpacitySetters[photo.id](
       this.state.openProgress.interpolate({
-        inputRange: [0.005, 0.01, 0.99, 1],
-        outputRange: [1, 0, 0, 1]
+        inputRange: [0.005, 0.01],
+        outputRange: [1, 0]
       })
     );
-    this.setState({ photo }, () => {
+    this.setState({ photo, isAnimating: true }, () => {
       Animated.timing(this.state.openProgress, {
         toValue: 1,
         duration: 3000,
         useNativeDriver: true
-      }).start();
+      }).start(() => {
+        this.setState({ isAnimating: false });
+      });
     });
   };
 
-  close = () => {
-    this.setState({ photo: null }, () => {
+  close = photoId => {
+    this.setState({ photo: null, isAnimating: true }, () => {
       Animated.timing(this.state.openProgress, {
         toValue: 0,
         duration: 3000,
         useNativeDriver: true
-      }).start();
+      }).start(() => {
+        this._imageOpacitySetters[photoId](1);
+        this.setState({ isAnimating: false });
+      });
     });
   };
 
   render() {
-    const { photo, openProgress } = this.state;
+    const { photo, openProgress, isAnimating } = this.state;
     return (
       <View style={{ flex: 1 }}>
         {this.props.renderContent({ onPhotoOpen: this.open })}
-
-        <DetailView
-          photo={photo}
-          onClose={this.close}
-          openProgress={openProgress}
-        />
         <Transition
           openProgress={openProgress}
           photo={photo}
           sourceImageRefs={this._images}
+          isAnimating={isAnimating}
+        />
+        <DetailView
+          photo={photo}
+          onClose={this.close}
+          openProgress={openProgress}
+          isAnimating={isAnimating}
         />
       </View>
     );
@@ -335,9 +357,6 @@ const styles = StyleSheet.create({
   closeText: { color: 'white', backgroundColor: 'transparent' },
   closeButton: {
     backgroundColor: 'rgba(0,0,0,0.5)',
-    position: 'absolute',
-    top: 20,
-    left: 20,
     borderWidth: 1,
     borderColor: 'white',
     padding: 10,
