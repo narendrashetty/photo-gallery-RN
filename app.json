@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "photo-gallery",
-    "description": "An empty new project",
+    "description": "Photo gallery with Shared Element Transition",
     "slug": "photo-gallery",
     "privacy": "public",
     "sdkVersion": "19.0.0",

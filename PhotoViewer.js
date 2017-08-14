@@ -297,7 +297,7 @@ export default class PhotoViewer extends React.Component {
     this.setState({ photo, isAnimating: true }, () => {
       Animated.timing(this.state.openProgress, {
         toValue: 1,
-        duration: 3000,
+        duration: 300,
         useNativeDriver: true
       }).start(() => {
         this.setState({ isAnimating: false });
@@ -309,7 +309,7 @@ export default class PhotoViewer extends React.Component {
     this.setState({ photo: null, isAnimating: true }, () => {
       Animated.timing(this.state.openProgress, {
         toValue: 0,
-        duration: 3000,
+        duration: 300,
         useNativeDriver: true
       }).start(() => {
         this._imageOpacitySetters[photoId](1);
