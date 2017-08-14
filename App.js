@@ -10,22 +10,10 @@ import {
 } from 'react-native';
 import PHOTOS from './src/data';
 import { processImages, buildRows, normalizeRows } from './src/utils';
-import PhotoViewer from './PhotoViewer';
+import PhotoGallery from './src/PhotoGallery';
+import GridItem from './src/GridItem';
 
 const maxWidth = Dimensions.get('window').width;
-
-const Item = ({ item, onPhotoOpen }) =>
-  <TouchableWithoutFeedback onPress={() => onPhotoOpen(item)}>
-    <View>
-      <PhotoViewer.Photo
-        photo={item}
-        style={{
-          width: item.width,
-          height: item.height
-        }}
-      />
-    </View>
-  </TouchableWithoutFeedback>;
 
 export default class App extends React.Component {
   componentWillMount() {
@@ -51,13 +39,13 @@ export default class App extends React.Component {
       }}
     >
       {row.map(item =>
-        <Item item={item} key={item.id} onPhotoOpen={onPhotoOpen} />
+        <GridItem item={item} key={item.id} onPhotoOpen={onPhotoOpen} />
       )}
     </View>;
 
   render() {
     return (
-      <PhotoViewer
+      <PhotoGallery
         renderContent={({ onPhotoOpen }) =>
           <ListView
             dataSource={this.state.dataSource}
