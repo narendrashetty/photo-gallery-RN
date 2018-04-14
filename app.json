@@ -4,7 +4,7 @@
     "description": "Photo gallery with Shared Element Transition",
     "slug": "photo-gallery",
     "privacy": "public",
-    "sdkVersion": "19.0.0",
+    "sdkVersion": "21.0.0",
     "version": "1.0.0",
     "orientation": "portrait",
     "primaryColor": "#cccccc",
